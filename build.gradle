@@ -14,10 +14,6 @@ base {
     version = project.maven_version ?: rootProject.maven_version
 }
 
-sourceSets {
-    javaFxStub // Java 11+ does not include JavaFX anymore, so the JavaFX stubs are needed for the compiler
-}
-
 repositories {
     mavenCentral()
 }
@@ -25,7 +21,6 @@ repositories {
 dependencies {
     compileOnly(annotationProcessor("org.projectlombok:lombok:1.18.34"))
     compileOnly "org.jetbrains:annotations:24.1.0"
-    compileOnly sourceSets.javaFxStub.output
 
     api "net.lenni0451.commons:httpclient:1.6.0"
     api "com.google.code.gson:gson:2.11.0"
@@ -61,26 +56,6 @@ artifacts {
 }
 
 publishing {
-    repositories {
-        maven {
-            name = "reposilite"
-            url = "https://maven.lenni0451.net/" + (project.maven_version.endsWith("SNAPSHOT") ? "snapshots" : "releases")
-
-            credentials(PasswordCredentials)
-            authentication {
-                basic(BasicAuthentication)
-            }
-        }
-        maven {
-            name = "ossrh"
-            url = "https://s01.oss.sonatype.org/" + (project.maven_version.endsWith("SNAPSHOT") ? "content/repositories/snapshots/" : "service/local/staging/deploy/maven2/")
-
-            credentials(PasswordCredentials)
-            authentication {
-                basic(BasicAuthentication)
-            }
-        }
-    }
     publications {
         maven(MavenPublication) {
             groupId = project.maven_group
@@ -112,16 +87,6 @@ publishing {
             }
         }
     }
-}
-
-signing {
-    setRequired(false)
-    sign configurations.archives
-    sign publishing.publications.maven
-}
-
-project.tasks.withType(PublishToMavenRepository).forEach {
-    it.dependsOn(project.tasks.withType(Sign))
 }
 
 String latestCommitHash() {

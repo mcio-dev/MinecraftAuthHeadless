@@ -17,7 +17,6 @@
  */
 package net.raphimc.minecraftauth;
 
-import lombok.SneakyThrows;
 import net.lenni0451.commons.httpclient.HttpClient;
 import net.lenni0451.commons.httpclient.RetryHandler;
 import net.lenni0451.commons.httpclient.constants.ContentTypes;
@@ -44,7 +43,6 @@ import net.raphimc.minecraftauth.util.logging.LazyLogger;
 import net.raphimc.minecraftauth.util.logging.Slf4jConsoleLogger;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.lang.reflect.Constructor;
 import java.util.function.Function;
 
 public class MinecraftAuth {
@@ -247,26 +245,6 @@ public class MinecraftAuth {
             }
 
             this.msaCodeStep = new StepCredentialsMsaCode(this.applicationDetails);
-
-            return new InitialXblSessionBuilder(this);
-        }
-
-        /**
-         * Opens a JavaFX WebView window to get an MSA token. The window closes when the user logged in.<br>
-         * Optionally accepts a {@link StepJfxWebViewMsaCode.JavaFxWebView} as input when calling {@link AbstractStep#getFromInput(HttpClient, AbstractStep.InitialInput)}.
-         *
-         * @return The builder
-         */
-        @SneakyThrows
-        public InitialXblSessionBuilder javaFxWebView() {
-            if (this.applicationDetails.getRedirectUri() == null) {
-                this.applicationDetails = this.applicationDetails.withRedirectUri(this.applicationDetails.getOAuthEnvironment().getNativeClientUrl());
-            }
-
-            // Don't reference the constructor directly to prevent Spigot from loading JavaFX classes when not needed
-            // Spigot's class remapper is crappy and loads classes even when the method isn't ever called
-            final Constructor<?> constructor = StepJfxWebViewMsaCode.class.getConstructor(AbstractStep.ApplicationDetails.class, int.class);
-            this.msaCodeStep = (AbstractStep<?, MsaCodeStep.MsaCode>) constructor.newInstance(this.applicationDetails, this.timeout * 1000);
 
             return new InitialXblSessionBuilder(this);
         }
