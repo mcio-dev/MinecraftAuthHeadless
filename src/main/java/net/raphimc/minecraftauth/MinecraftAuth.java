@@ -117,10 +117,11 @@ public class MinecraftAuth {
     }
 
 
-
     public static HttpClient createHttpClient() {
-        final int timeout = 5000;
+        return createHttpClient(5000);
+    }
 
+    public static HttpClient createHttpClient(int timeout) {
         return new HttpClient()
                 .setConnectTimeout(timeout)
                 .setReadTimeout(timeout * 2)
