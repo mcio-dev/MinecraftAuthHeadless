@@ -116,6 +116,8 @@ public class MinecraftAuth {
         return new MsaTokenBuilder();
     }
 
+
+
     public static HttpClient createHttpClient() {
         final int timeout = 5000;
 

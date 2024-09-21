@@ -22,7 +22,6 @@ dependencies {
     compileOnly(annotationProcessor("org.projectlombok:lombok:1.18.34"))
     compileOnly "org.jetbrains:annotations:24.1.0"
 
-    api "net.lenni0451.commons:httpclient:1.6.0"
     api "com.google.code.gson:gson:2.11.0"
     api "io.jsonwebtoken:jjwt-impl:0.12.6"
     api("io.jsonwebtoken:jjwt-gson:0.12.6") {
