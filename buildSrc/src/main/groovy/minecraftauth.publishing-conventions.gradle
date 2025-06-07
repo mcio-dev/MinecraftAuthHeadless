@@ -8,13 +8,13 @@ publishing {
     publications {
         mavenJava {
             pom {
-                name = "MinecraftAuth"
+                name = "MinecraftAuthHeadless"
                 description = "Simple and easy to use Minecraft microsoft authentication library (Java and Bedrock)"
-                url = "https://github.com/RaphiMC/MinecraftAuth"
+                url = "https://github.com/mcio-dev/MinecraftAuthHeadless"
                 licenses {
                     license {
                         name = "LGPL-3.0 License"
-                        url = "https://github.com/RaphiMC/MinecraftAuth/blob/main/LICENSE"
+                        url = "https://github.com/mcio-dev/MinecraftAuthHeadless/blob/main/LICENSE"
                     }
                 }
                 developers {
@@ -23,9 +23,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection = "scm:git:git://github.com/RaphiMC/MinecraftAuth.git"
-                    developerConnection = "scm:git:ssh://github.com/RaphiMC/MinecraftAuth.git"
-                    url = "https://github.com/RaphiMC/MinecraftAuth.git"
+                    connection = "scm:git:git://github.com/mcio-dev/MinecraftAuthHeadless.git"
+                    developerConnection = "scm:git:ssh://github.com/mcio-dev/MinecraftAuthHeadless.git"
+                    url = "https://github.com/mcio-dev/MinecraftAuthHeadless.git"
                 }
             }
         }
