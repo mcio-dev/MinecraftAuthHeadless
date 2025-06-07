@@ -1,6 +1,6 @@
 /*
  * This file is part of MinecraftAuth - https://github.com/RaphiMC/MinecraftAuth
- * Copyright (C) 2022-2024 RK_01/RaphiMC and contributors
+ * Copyright (C) 2022-2025 RK_01/RaphiMC and contributors
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -83,6 +83,7 @@ public class StepLocalWebServerMsaCode extends MsaCodeStep<StepLocalWebServer.Lo
 
         try {
             final MsaCode msaCode = msaCodeFuture.get(this.timeout, TimeUnit.MILLISECONDS);
+            msaCode.customRedirectUri = localWebServer.getCustomRedirectUri();
             httpServer.stop(0);
             logger.info(this, "Got MSA Code");
             return msaCode;

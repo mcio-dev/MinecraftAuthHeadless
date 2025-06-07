@@ -15,16 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.raphimc.minecraftauth.util;
+package net.raphimc.minecraftauth.util.logging;
 
-import com.google.gson.JsonObject;
-import net.lenni0451.commons.httpclient.constants.ContentTypes;
-import net.lenni0451.commons.httpclient.content.impl.StringContent;
+public class NoOpLogger implements ILogger {
 
-public class JsonContent extends StringContent {
+    @Override
+    public void info(String message) {
+    }
 
-    public JsonContent(final JsonObject jsonObject) {
-        super(ContentTypes.APPLICATION_JSON, jsonObject.toString());
+    @Override
+    public void warn(String message) {
+    }
+
+    @Override
+    public void error(String message) {
     }
 
 }

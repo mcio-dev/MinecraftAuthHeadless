@@ -1,6 +1,6 @@
 /*
  * This file is part of MinecraftAuth - https://github.com/RaphiMC/MinecraftAuth
- * Copyright (C) 2022-2024 RK_01/RaphiMC and contributors
+ * Copyright (C) 2022-2025 RK_01/RaphiMC and contributors
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,18 +17,12 @@
  */
 package net.raphimc.minecraftauth.responsehandler.exception;
 
-import lombok.Getter;
 import net.lenni0451.commons.httpclient.HttpResponse;
 
-@Getter
 public class MsaRequestException extends ApiHttpRequestException {
-
-    private final String error;
 
     public MsaRequestException(final HttpResponse response, final String error, final String errorMessage) {
         super(response, error, errorMessage);
-
-        this.error = error;
     }
 
 }

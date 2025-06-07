@@ -1,6 +1,6 @@
 /*
  * This file is part of MinecraftAuth - https://github.com/RaphiMC/MinecraftAuth
- * Copyright (C) 2022-2024 RK_01/RaphiMC and contributors
+ * Copyright (C) 2022-2025 RK_01/RaphiMC and contributors
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,23 +18,17 @@
 package net.raphimc.minecraftauth.util;
 
 import com.google.gson.JsonObject;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.impl.security.DefaultSecureRequest;
 import net.lenni0451.commons.httpclient.content.HttpContent;
 import net.lenni0451.commons.httpclient.model.HttpHeader;
 import net.lenni0451.commons.httpclient.requests.HttpContentRequest;
 import net.lenni0451.commons.httpclient.requests.HttpRequest;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -124,7 +118,21 @@ public class CryptUtil {
         data = new DataOutputStream(header);
         data.writeInt(1); // Policy Version
         data.writeLong(windowsTimestamp); // Timestamp
-        data.write(Jwts.SIG.ES256.digest(new DefaultSecureRequest<>(new ByteArrayInputStream(signatureContent.toByteArray()), null, null, privateKey))); // Signature
+
+        try {
+            byte[] signature;
+            try { // Java 9+ only
+                final Signature ecdsaSignature = Signature.getInstance("SHA256withECDSAinP1363Format");
+                ecdsaSignature.initSign(privateKey);
+                ecdsaSignature.update(signatureContent.toByteArray());
+                signature = ecdsaSignature.sign();
+            } catch (NoSuchAlgorithmException e) { // Fallback for Java 8
+                signature = JwtUtil.signES256(privateKey, signatureContent.toByteArray());
+            }
+            data.write(signature); // Signature
+        } catch (Throwable e) {
+            throw new RuntimeException("Could not sign request", e);
+        }
 
         return new HttpHeader("Signature", Base64.getEncoder().encodeToString(header.toByteArray()));
     }

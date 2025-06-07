@@ -1,6 +1,6 @@
 /*
  * This file is part of MinecraftAuth - https://github.com/RaphiMC/MinecraftAuth
- * Copyright (C) 2022-2024 RK_01/RaphiMC and contributors
+ * Copyright (C) 2022-2025 RK_01/RaphiMC and contributors
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,7 +104,11 @@ public class StepMsaToken extends AbstractStep<MsaCodeStep.MsaCode, StepMsaToken
             postData.put("refresh_token", codeOrRefreshToken);
         } else if (type.equals("authorization_code")) {
             postData.put("code", codeOrRefreshToken);
-            postData.put("redirect_uri", this.applicationDetails.getRedirectUri());
+            if (msaCode.customRedirectUri != null) {
+                postData.put("redirect_uri", msaCode.customRedirectUri);
+            } else {
+                postData.put("redirect_uri", this.applicationDetails.getRedirectUri());
+            }
         } else {
             throw new IllegalArgumentException("Invalid type: " + type);
         }

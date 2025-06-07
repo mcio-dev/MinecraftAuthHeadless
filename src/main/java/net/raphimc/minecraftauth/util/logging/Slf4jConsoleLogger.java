@@ -15,16 +15,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.raphimc.minecraftauth.util;
+package net.raphimc.minecraftauth.util.logging;
 
-import com.google.gson.JsonObject;
-import net.lenni0451.commons.httpclient.constants.ContentTypes;
-import net.lenni0451.commons.httpclient.content.impl.StringContent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class JsonContent extends StringContent {
+public class Slf4jConsoleLogger implements ILogger {
 
-    public JsonContent(final JsonObject jsonObject) {
-        super(ContentTypes.APPLICATION_JSON, jsonObject.toString());
+    private final Logger logger;
+
+    public Slf4jConsoleLogger() {
+        this(LoggerFactory.getLogger("MinecraftAuth"));
+    }
+
+    public Slf4jConsoleLogger(final Logger logger) {
+        this.logger = logger;
+    }
+
+    @Override
+    public void info(final String message) {
+        this.logger.info(message);
+    }
+
+    @Override
+    public void warn(final String message) {
+        this.logger.warn(message);
+    }
+
+    @Override
+    public void error(final String message) {
+        this.logger.error(message);
     }
 
 }

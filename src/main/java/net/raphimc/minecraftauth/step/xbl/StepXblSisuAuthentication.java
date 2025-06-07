@@ -1,6 +1,6 @@
 /*
  * This file is part of MinecraftAuth - https://github.com/RaphiMC/MinecraftAuth
- * Copyright (C) 2022-2024 RK_01/RaphiMC and contributors
+ * Copyright (C) 2022-2025 RK_01/RaphiMC and contributors
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -152,12 +152,12 @@ public class StepXblSisuAuthentication extends AbstractStep<StepInitialXblSessio
 
         @Override
         public boolean isExpired() {
-            return this.userToken.isExpired() || this.titleToken.isExpired() || this.xstsToken.isExpired();
+            return this.userToken.isExpired() || this.titleToken.isExpired() || this.xstsToken.isExpired() || this.prevResult().isExpired();
         }
 
         @Override
         public boolean isExpiredOrOutdated() {
-            return this.userToken.isExpiredOrOutdated() || this.titleToken.isExpiredOrOutdated() || this.xstsToken.isExpiredOrOutdated();
+            return this.userToken.isExpiredOrOutdated() || this.titleToken.isExpiredOrOutdated() || this.xstsToken.isExpiredOrOutdated() || this.prevResult().isExpiredOrOutdated();
         }
 
     }

@@ -1,6 +1,6 @@
 /*
  * This file is part of MinecraftAuth - https://github.com/RaphiMC/MinecraftAuth
- * Copyright (C) 2022-2024 RK_01/RaphiMC and contributors
+ * Copyright (C) 2022-2025 RK_01/RaphiMC and contributors
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,11 +22,13 @@ import com.google.gson.stream.JsonReader;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import net.lenni0451.commons.httpclient.HttpClient;
+import net.lenni0451.commons.httpclient.HttpResponse;
 import net.lenni0451.commons.httpclient.constants.ContentTypes;
-import net.lenni0451.commons.httpclient.constants.Headers;
+import net.lenni0451.commons.httpclient.constants.HttpHeaders;
 import net.lenni0451.commons.httpclient.constants.StatusCodes;
 import net.lenni0451.commons.httpclient.content.impl.URLEncodedFormContent;
 import net.lenni0451.commons.httpclient.exceptions.HttpRequestException;
+import net.lenni0451.commons.httpclient.requests.HttpRequest;
 import net.lenni0451.commons.httpclient.requests.impl.GetRequest;
 import net.lenni0451.commons.httpclient.requests.impl.PostRequest;
 import net.lenni0451.commons.httpclient.utils.URLWrapper;
@@ -36,9 +38,11 @@ import net.raphimc.minecraftauth.step.AbstractStep;
 import net.raphimc.minecraftauth.util.JsonUtil;
 import net.raphimc.minecraftauth.util.logging.ILogger;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.net.CookieManager;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,14 +63,33 @@ public class StepCredentialsMsaCode extends MsaCodeStep<StepCredentialsMsaCode.M
         }
 
         final CookieManager cookieManager = new CookieManager();
+        final PostRequest loginPostRequest = this.prepareLoginPostRequest(httpClient, msaCredentials, cookieManager);
+        final HttpResponse loginResponse = this.sendLoginRequest(httpClient, loginPostRequest);
+
+        final Optional<String> locationHeader = loginResponse.getFirstHeader(HttpHeaders.LOCATION);
+        if (!locationHeader.isPresent()) {
+            throw new IllegalStateException("Could not get redirect url");
+        }
+
+        final Map<String, String> parameters = new URLWrapper(locationHeader.get()).wrapQuery().getQueries();
+        if (!parameters.containsKey("code")) {
+            throw new IllegalStateException("Could not extract MSA Code from redirect url");
+        }
+
+        final MsaCode msaCode = new MsaCode(parameters.get("code"));
+        logger.info(this, "Got MSA Code");
+        return msaCode;
+    }
+
+    private PostRequest prepareLoginPostRequest(final HttpClient httpClient, final MsaCredentials msaCredentials, final CookieManager cookieManager) throws IOException, URISyntaxException {
         final URL authenticationUrl = new URLWrapper(this.applicationDetails.getOAuthEnvironment().getAuthorizeUrl()).wrapQuery().addQueries(this.applicationDetails.getOAuthParameters()).apply().toURL();
 
         final GetRequest getRequest = new GetRequest(authenticationUrl);
         getRequest.setCookieManager(cookieManager);
-        getRequest.setHeader(Headers.ACCEPT, ContentTypes.TEXT_HTML.getMimeType());
+        getRequest.setHeader(HttpHeaders.ACCEPT, ContentTypes.TEXT_HTML.getMimeType());
         final JsonObject config = httpClient.execute(getRequest, response -> {
             if (response.getStatusCode() >= 300) {
-                final Optional<String> locationHeader = response.getFirstHeader(Headers.LOCATION);
+                final Optional<String> locationHeader = response.getFirstHeader(HttpHeaders.LOCATION);
                 if (locationHeader.isPresent()) {
                     final Map<String, String> parameters = new URLWrapper(locationHeader.get()).wrapQuery().getQueries();
                     if (parameters.containsKey("error") && parameters.containsKey("error_description")) {
@@ -118,64 +141,76 @@ public class StepCredentialsMsaCode extends MsaCodeStep<StepCredentialsMsaCode.M
 
         final PostRequest postRequest = new PostRequest(urlPost);
         postRequest.setCookieManager(cookieManager);
-        postRequest.setHeader(Headers.ACCEPT, ContentTypes.TEXT_HTML.getMimeType());
+        postRequest.setHeader(HttpHeaders.ACCEPT, ContentTypes.TEXT_HTML.getMimeType());
         postRequest.setContent(new URLEncodedFormContent(postData));
-        final String code = httpClient.execute(postRequest, response -> {
-            if (response.getStatusCode() != StatusCodes.MOVED_TEMPORARILY) {
-                if (!response.getContentType().orElse(ContentTypes.TEXT_PLAIN).getMimeType().equals(ContentTypes.TEXT_HTML.getMimeType())) {
-                    throw new InformativeHttpRequestException(response, "Wrong content type");
-                }
+        return postRequest;
+    }
 
-                final JsonObject errorConfig = StepCredentialsMsaCode.this.extractConfig(response.getContentAsString());
-                switch (StepCredentialsMsaCode.this.applicationDetails.getOAuthEnvironment()) {
+    private HttpResponse sendLoginRequest(final HttpClient httpClient, final HttpRequest request) throws IOException {
+        final HttpResponse loginResponse = httpClient.execute(request);
+
+        if (loginResponse.getStatusCode() != StatusCodes.MOVED_TEMPORARILY) {
+            if (!loginResponse.getContentType().orElse(ContentTypes.TEXT_PLAIN).getMimeType().equals(ContentTypes.TEXT_HTML.getMimeType())) {
+                throw new InformativeHttpRequestException(loginResponse, "Wrong content type");
+            }
+
+            final String responseString = loginResponse.getContentAsString();
+            if (responseString.contains("<body onload=\"javascript:DoSubmit();\">")) { // Dialog informing the user about something. Can be skipped by getting the return url.
+                String actionUrl = responseString.substring(responseString.indexOf("action=\"") + 8);
+                actionUrl = actionUrl.substring(0, actionUrl.indexOf("\""));
+                final String returnUrl = new URLWrapper(actionUrl).wrapQuery().getQuery("ru").get();
+
+                final GetRequest getRequest = new GetRequest(returnUrl);
+                getRequest.setCookieManager(request.getCookieManager());
+                getRequest.setHeader(HttpHeaders.ACCEPT, ContentTypes.TEXT_HTML.getMimeType());
+                return this.sendLoginRequest(httpClient, getRequest);
+            } else {
+                final JsonObject errorConfig = this.extractConfig(loginResponse.getContentAsString());
+                switch (this.applicationDetails.getOAuthEnvironment()) {
                     case LIVE: {
                         if (errorConfig.has("sErrorCode") && errorConfig.has("sErrTxt")) {
-                            throw new MsaRequestException(response, errorConfig.get("sErrorCode").getAsString(), errorConfig.get("sErrTxt").getAsString());
+                            throw new MsaRequestException(loginResponse, errorConfig.get("sErrorCode").getAsString(), errorConfig.get("sErrTxt").getAsString());
                         }
                         break;
                     }
                     case MICROSOFT_ONLINE_COMMON:
                     case MICROSOFT_ONLINE_CONSUMERS: {
                         if (errorConfig.has("iErrorCode") && errorConfig.has("strServiceExceptionMessage")) {
-                            throw new MsaRequestException(response, errorConfig.get("iErrorCode").getAsString(), errorConfig.get("strServiceExceptionMessage").getAsString());
+                            throw new MsaRequestException(loginResponse, errorConfig.get("iErrorCode").getAsString(), errorConfig.get("strServiceExceptionMessage").getAsString());
                         }
                         break;
                     }
                     default:
-                        throw new IllegalStateException("Unsupported OAuthEnvironment: " + StepCredentialsMsaCode.this.applicationDetails.getOAuthEnvironment());
+                        throw new IllegalStateException("Unsupported OAuthEnvironment: " + this.applicationDetails.getOAuthEnvironment());
                 }
+
+                throw new IllegalStateException("Could not extract config from html. This most likely indicates that the account does not exist");
             }
+        }
 
-            final Optional<String> locationHeader = response.getFirstHeader(Headers.LOCATION);
-            if (!locationHeader.isPresent()) {
-                throw new IllegalStateException("Could not get redirect url");
-            }
-
-            final Map<String, String> parameters = new URLWrapper(locationHeader.get()).wrapQuery().getQueries();
-            if (!parameters.containsKey("code")) {
-                throw new IllegalStateException("Could not extract MSA Code from redirect url");
-            }
-
-            return parameters.get("code");
-        });
-
-        final MsaCode msaCode = new MsaCode(code);
-        logger.info(this, "Got MSA Code");
-        return msaCode;
+        return loginResponse;
     }
 
     private JsonObject extractConfig(final String html) {
         switch (this.applicationDetails.getOAuthEnvironment()) {
             case LIVE: {
-                final JsonReader jsonReader = new JsonReader(new StringReader(html.substring(html.indexOf("var ServerData = ") + 17)));
-                jsonReader.setLenient(true);
-                return JsonUtil.GSON.fromJson(jsonReader, JsonObject.class);
+                try {
+                    final JsonReader jsonReader = new JsonReader(new StringReader(html.substring(html.indexOf("var ServerData = ") + 17)));
+                    jsonReader.setLenient(true);
+                    return JsonUtil.GSON.fromJson(jsonReader, JsonObject.class);
+                } catch (Throwable e) {
+                    throw new IllegalStateException("Could not extract config from html. This most likely indicates that the login was not successful", e);
+                }
             }
             case MICROSOFT_ONLINE_COMMON:
             case MICROSOFT_ONLINE_CONSUMERS: {
-                final JsonReader jsonReader = new JsonReader(new StringReader(html.substring(html.indexOf("$Config=") + 8)));
-                jsonReader.setLenient(true);
-                return JsonUtil.GSON.fromJson(jsonReader, JsonObject.class);
+                try {
+                    final JsonReader jsonReader = new JsonReader(new StringReader(html.substring(html.indexOf("$Config=") + 8)));
+                    jsonReader.setLenient(true);
+                    return JsonUtil.GSON.fromJson(jsonReader, JsonObject.class);
+                } catch (Throwable e) {
+                    throw new IllegalStateException("Could not extract config from html. This most likely indicates that the login was not successful", e);
+                }
             }
             default:
                 throw new IllegalStateException("Unsupported OAuthEnvironment: " + this.applicationDetails.getOAuthEnvironment());

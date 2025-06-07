@@ -1,6 +1,6 @@
 /*
  * This file is part of MinecraftAuth - https://github.com/RaphiMC/MinecraftAuth
- * Copyright (C) 2022-2024 RK_01/RaphiMC and contributors
+ * Copyright (C) 2022-2025 RK_01/RaphiMC and contributors
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,7 @@ package net.raphimc.minecraftauth;
 import net.lenni0451.commons.httpclient.HttpClient;
 import net.lenni0451.commons.httpclient.RetryHandler;
 import net.lenni0451.commons.httpclient.constants.ContentTypes;
-import net.lenni0451.commons.httpclient.constants.Headers;
+import net.lenni0451.commons.httpclient.constants.HttpHeaders;
 import net.raphimc.minecraftauth.step.AbstractStep;
 import net.raphimc.minecraftauth.step.BiMergeStep;
 import net.raphimc.minecraftauth.step.bedrock.StepMCChain;
@@ -48,7 +48,7 @@ import java.util.function.Function;
 public class MinecraftAuth {
 
     public static final String VERSION = "${version}";
-    public static final String IMPL_VERSION = "${impl_version}";
+    public static final String IMPL_VERSION = "${version}+${commit_hash}";
 
     public static ILogger LOGGER = new LazyLogger(JavaConsoleLogger::new);
     public static String USER_AGENT = "MinecraftAuth/" + VERSION;
@@ -128,9 +128,9 @@ public class MinecraftAuth {
                 .setCookieManager(null)
                 .setFollowRedirects(false)
                 .setRetryHandler(new RetryHandler(0, 50))
-                .setHeader(Headers.ACCEPT, ContentTypes.APPLICATION_JSON.toString())
-                .setHeader(Headers.ACCEPT_LANGUAGE, "en-US,en")
-                .setHeader(Headers.USER_AGENT, USER_AGENT);
+                .setHeader(HttpHeaders.ACCEPT, ContentTypes.APPLICATION_JSON.toString())
+                .setHeader(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en")
+                .setHeader(HttpHeaders.USER_AGENT, USER_AGENT);
     }
 
     public static class MsaTokenBuilder {
